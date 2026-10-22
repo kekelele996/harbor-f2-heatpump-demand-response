@@ -1,0 +1,47 @@
+schema_version = "1.3"
+artifacts = []
+
+[task]
+name = "local/f2-heatpump-demand-response"
+description = "商业楼宇热泵与蓄热罐的全时段需量响应调度"
+keywords = ["energy-systems", "heat-pump", "thermal-storage", "demand-charge", "time-of-use"]
+[[task.authors]]
+name = "gaobo"
+
+[metadata]
+author_name = "gaobo"
+author_email = "unknown"
+difficulty = "hard"
+category = "energy-systems"
+tags = ["energy-systems", "heat-pump", "thermal-storage", "demand-response"]
+# 审核器按字符串解析（"4h"、"90m"）；裸数字会被当成小时。_min 版本给平台表格用。
+expert_time_estimate = "4h"
+expert_time_estimate_min = 240
+junior_time_estimate_min = 0
+
+[verifier]
+timeout_sec = 600              # test.sh 内层 timeout 540s，留 60 s 给清场和写 reward
+environment_mode = "shared"    # 显式写 shared：独立评分容器不继承 /app 的修改
+user = "root"                  # 评分以 root 运行，候选由 test_outputs.py 降权到 runner
+collect = []
+
+[verifier.env]
+
+[agent]
+timeout_sec = 1800             # 审核口径 900–1800；连续超时再从 900 提到 1800，不要堆到 3600
+user = "runner"                # 解题与参考解以 runner 运行；Dockerfile 不写 USER，保活进程留在 root
+
+[environment]
+network_mode = "public"
+allow_internet = true
+build_timeout_sec = 900
+os = "linux"
+cpus = 1
+memory_mb = 2048
+storage_mb = 4096
+gpus = 0
+mcp_servers = []
+
+[environment.env]
+
+[solution.env]

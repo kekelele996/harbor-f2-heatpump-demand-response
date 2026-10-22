@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "gate_tests": [
+    "test_outputs.py::test_prints_required_json_shape",
+    "test_outputs.py::test_wrong_argument_count_exits_2"
+  ],
+  "tests": {
+    "test_outputs.py::test_cop_interpolation_uses_supply_axis": {"weight": 0.084, "rationale": "难点1 COP 插值：供水温度轴必须参与，难点合计 0.25"},
+    "test_outputs.py::test_cop_interpolation_inside_grid_cell": {"weight": 0.083, "rationale": "难点1 COP 插值：网格内部双方向插值，难点合计 0.25"},
+    "test_outputs.py::test_hp_heat_uses_interpolated_cop": {"weight": 0.083, "rationale": "难点1 COP 插值：制热量必须使用插值后的 COP，难点合计 0.25"},
+    "test_outputs.py::test_discharge_efficiency_trace": {"weight": 0.10, "rationale": "难点2 蓄热状态：放热效率与散热共同决定结束存量，难点合计 0.30"},
+    "test_outputs.py::test_charge_efficiency_trace": {"weight": 0.10, "rationale": "难点2 蓄热状态：充热效率不能由往返效率代替，难点合计 0.30"},
+    "test_outputs.py::test_standing_loss_trace": {"weight": 0.10, "rationale": "难点2 蓄热状态：逐时段散热损失，难点合计 0.30"},
+    "test_outputs.py::test_global_plan_minimizes_site_peak": {"weight": 0.1125, "rationale": "难点3 全时段优化：并网峰值包含基础负荷和热泵负荷，难点合计 0.45"},
+    "test_outputs.py::test_global_plan_demand_cost": {"weight": 0.1125, "rationale": "难点3 全时段优化：需量费用按全周期峰值结算，难点合计 0.45"},
+    "test_outputs.py::test_global_plan_total_cost": {"weight": 0.1125, "rationale": "难点3 全时段优化：目标函数是电度费用与需量费用之和，难点合计 0.45"},
+    "test_outputs.py::test_global_plan_uses_part_load_during_peak": {"weight": 0.1125, "rationale": "难点3 全时段优化：需用跨时段蓄热和部分负荷削峰，难点合计 0.45"}
+  }
+}
