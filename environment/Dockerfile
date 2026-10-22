@@ -1,11 +1,14 @@
-# Python 3.11 slim，按镜像索引 digest 固定；题目仅使用标准库。
-FROM python:3.11-slim@sha256:0dd364ba7e10242f07755449e3a3d0e35f9efd987952737b90def6709ab0c5ce
+# 统一运行镜像：已包含 Python、Node、curl、procps，避免评分阶段联网安装。
+FROM adminfather/benzhi-claude-code2:20260919@sha256:6bc4ad09b1c450579b25e61e7c797328ebaf4ac4eb086c078d2ec1e9f7742046
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# 解题与参考解身份由 task.toml 的 [agent] user = "runner" 指定。
-RUN useradd --create-home --uid 1000 runner
+# 覆盖基础镜像的交互式入口；解题与参考解身份由 task.toml 指定。
+ENTRYPOINT []
+USER root
+RUN if [ ! -e /usr/local/bin/python3 ]; then ln -s /usr/bin/python3 /usr/local/bin/python3; fi \
+    && useradd --create-home --uid 1001 runner
 
 WORKDIR /app
 COPY app/ /app/
