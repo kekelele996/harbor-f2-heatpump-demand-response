@@ -1,43 +1,33 @@
-# 楼宇热泵蓄热系统辨识与需量响应
+# 商场热泵蓄热日运行单
 
-商业综合体的热泵和蓄热罐刚完成调试，能源管理员要根据调试遥测建立运行模型，再按次日气象、热负荷和电价生成 96 个 15 分钟时段的运行单。调试记录里有少量短时传感器尖峰；现有 `/app/main.py` 能把记录算成一条曲线，但寒潮日的制热量、蓄热罐结束存量和需量峰值经常与现场复核单对不上。
+商场的能源管理员每天下午排次日热泵和蓄热罐的班。刚做完调试，手上有一批带短时传感器尖峰的记录。现有 `/app/main.py` 能跑出一张运行单，但寒潮日的制热量、下班时的蓄热存量、以及需量峰值常和现场复核单对不上。运行单是给夜班操作员看的，每个时段都要能对上设备动作、罐内存量和电网取电，不能只凑出一张看似完整的表。
 
-## 要交付的内容
+## 程序怎么跑
 
-修好 `/app/main.py`。用法是 `python3 /app/main.py <scenario.json>`，输入是一个 JSON 对象：
+用法是 `python3 /app/main.py <scenario.json>`。输入文件里有：
 
-- `calibration.cop_samples`：制热性能调试记录，每条含室外温度、供水温度、热泵电功率和制热量。
-- `calibration.storage_samples`：蓄热调试记录，每条含时段开始存量、结束存量、净制热量和时段长度。
+- `calibration.cop_samples`：调试时的室外温度、供水温度、热泵电功率和制热量。
+- `calibration.storage_samples`：每段的开始存量、结束存量、净制热量和时段长度。
 - `period_hours`：调度时段长度，单位 h。
-- `outdoor_temp_c`、`heat_demand_kw_th`、`base_load_kw`、`pv_kw`、`energy_price_cny_per_kwh`：次日室外温度、建筑热负荷、基础用电负荷、光伏出力和电度电价，所有时序列长度相同。
-- `demand_charge_cny_per_kw_day`：按日结算的需量单价。
-- `heat_pump`：额定电功率、供水温度、允许的压缩机档位、最小连续运行和停机时段数、相邻时段最大档位变化以及每次启动费用。
-- `storage`：蓄热容量、初始和结束蓄热量、充放热功率上限以及结束蓄热量容差。
+- `outdoor_temp_c`、`heat_demand_kw_th`、`base_load_kw`、`pv_kw`、`energy_price_cny_per_kwh`：次日各时段的气象和负荷，长度必须一致。
+- `demand_charge_cny_per_kw_day`：需量单价。
+- `heat_pump`：额定电功率、供水温度、可用的压缩机档位、最小连续运行和停机时段数、相邻时段允许的档位变化、每次启动费用。
+- `storage`：容量、初始和结束存量、充放热功率上限、结束存量容差。
 
-程序向标准输出写一个 JSON 对象，顶层只含 `model`、`schedule` 和 `summary` 三个字段。
+「程序向标准输出写一个 JSON 对象，顶层只有 model、schedule 和 summary。」`model.cop` 只放 `intercept`、`outdoor`、`supply_delta`、`interaction` 四个数，模型写成 `intercept + outdoor*T_out + supply_delta*(T_supply-35) + interaction*T_out*(T_supply-35)`。`model.storage` 只放 `charge_efficiency`、`discharge_efficiency`、`loss_rate_per_hour`。
 
-- `model.cop` 只含 `intercept`、`outdoor`、`supply_delta`、`interaction`。性能模型为 `intercept + outdoor*T_out + supply_delta*(T_supply-35) + interaction*T_out*(T_supply-35)`。
-- `model.storage` 只含 `charge_efficiency`、`discharge_efficiency`、`loss_rate_per_hour`。
-- `schedule` 与时间序列等长，每个时段只含 `interval`、`stage_fraction`、`cop`、`hp_electric_kw`、`hp_heat_kw`、`storage_kwh`、`grid_import_kw`；`storage_kwh` 是该时段结束时的蓄热量。
-- `summary` 只含 `energy_cost_cny`、`demand_cost_cny`、`startup_cost_cny`、`total_cost_cny`、`peak_import_kw`。
+`schedule` 的每个时段只放 `interval`、`stage_fraction`、`cop`、`hp_electric_kw`、`hp_heat_kw`、`storage_kwh`、`grid_import_kw`，其中蓄热存量是时段结束时的值。`summary` 放 `energy_cost_cny`、`demand_cost_cny`、`startup_cost_cny`、`total_cost_cny`、`peak_import_kw`。所有连续量保留 6 位小数。
 
-所有连续数值保留 6 位小数。
+## 模型和运行约束
 
-## 计算口径
+「短时尖峰不能把拟合出来的性能曲线带偏。」拟合时把明显偏离主体记录的读数排除，但不能把正常的低温性能变化当成故障丢掉。
 
-- 「调试记录中的尖峰读数不得改变拟合出的性能模型。」
-- 「蓄热调试记录要分别保留充热、放热和静置三类信息。」蓄热更新先扣除 `loss_rate_per_hour * period_hours` 对应的存量损失，再在净制热量为正时乘充热效率，为负时除放热效率。
-- 热泵电功率等于档位乘额定电功率，制热量等于热泵电功率乘当前 COP。
-- 净制热量为正时允许充热，为负时由蓄热补足；任一方向的绝对值都不得超过对应功率上限。
-- 「结束时的蓄热量与 `terminal_kwh_th` 的差值不得超过 `terminal_tolerance_kwh`。」
-- 并网功率取 `max(0, base_load_kw + hp_electric_kw - pv_kw)`；光伏余电不售出。
-- 电度费用是各时段并网电量乘该时段电价之和。需量费用按全时段最大并网功率乘需量单价计算。
-- 「压缩机启动后的连续运行时长不得小于 `min_on_periods`。」停机时间不得小于 `min_off_periods`。
-- 「相邻时段档位变化不得超过 `max_stage_change`。」
-- 「每次从停机状态启动都要计入 `startup_cost_cny`。」
-- 「总费用是电度费用、需量费用与启动费用之和。」
-- 「在满足热负荷、设备功率和结束蓄热约束的前提下，使总费用最小。」压缩机只能取 `stage_fractions` 中的档位。
+「蓄热记录要分别保留充热、放热和静置三类信息。」每个时段先扣散热损失，再按净制热量的正负分别乘充热效率或除放热效率。净制热量超过对应充放功率上限、存量越过 0 到容量边界、或结束量与 `terminal_kwh_th` 的差距超过 `terminal_tolerance_kwh`，都算运行单不合格。
 
-参数个数不对时退出码为 2，不输出 JSON。输入字段缺失、时序列长度不一致、调试记录无法辨识出物理参数或不存在满足约束的方案时，同样退出码为 2，不输出 JSON。
+热泵电功率是档位乘额定电功率，制热量再乘当前 COP。压缩机只能选给定档位。「压缩机启动后至少连续运行 min_on_periods 个时段。」停机也至少持续 `min_off_periods` 个时段。「相邻时段的档位变化不能超过 max_stage_change。」「每次从停机状态启动都要计入 startup_cost_cny。」
 
-同一份输入重复执行，输出必须一致。不要访问网络。
+并网功率取 `max(0, base_load_kw + hp_electric_kw - pv_kw)`，光伏余电不卖。电度费是各时段并网电量乘该时段电价的和。需量费看整个周期里最高的并网功率，再乘合同单价。总费用是电度费、需量费和启动费三项之和。
+
+「在热负荷、功率和结束存量都能满足的前提下，总费用要取最低。」
+
+「参数个数不对时退出码为 2，不输出 JSON。」字段缺失、时序列长度不一致、调试记录不足或没有可行运行单时也这样处理。同一份输入重复运行必须给出相同结果，程序不要访问网络。字段为空、记录互相矛盾或约束打架时，把问题写进错误信息，不要静默套默认值。交班前把这张表和现场表逐项碰一下，发现不一致就回头查输入，不要改结果。

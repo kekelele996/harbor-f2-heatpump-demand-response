@@ -188,7 +188,7 @@ def cop_case(outdoor, supply, demand=0.0):
 # ---------- gate：入口与输出契约，不计分 ----------
 
 def test_prints_required_json_shape():
-    """「程序向标准输出写一个 JSON 对象，顶层只含 `model`、`schedule` 和 `summary` 三个字段。」"""
+    """「程序向标准输出写一个 JSON 对象，顶层只有 model、schedule 和 summary。」"""
     got = run_scenario(scenario(1))
     assert set(got) == {"model", "schedule", "summary"}
     assert set(got["model"]) == {"cop", "storage"}
@@ -215,19 +215,19 @@ def test_wrong_argument_count_exits_2():
 # ---------- 难点 1：从含尖峰的调试记录辨识 COP ----------
 
 def test_cop_fit_recovers_supply_sensitivity():
-    """「调试记录中的尖峰读数不得改变拟合出的性能模型。」"""
+    """「短时尖峰不能把拟合出来的性能曲线带偏。」"""
     got = run_scenario(cop_case(-2.5, 45.0))
     assert math.isclose(got["schedule"][0]["cop"], 2.27, abs_tol=1e-4)
 
 
 def test_cop_fit_recovers_interaction_term():
-    """「调试记录中的尖峰读数不得改变拟合出的性能模型。」"""
+    """「短时尖峰不能把拟合出来的性能曲线带偏。」"""
     got = run_scenario(cop_case(-2.0, 40.0))
     assert math.isclose(got["schedule"][0]["cop"], 2.493, abs_tol=1e-4)
 
 
 def test_hp_heat_uses_identified_cop():
-    """「调试记录中的尖峰读数不得改变拟合出的性能模型。」"""
+    """「短时尖峰不能把拟合出来的性能曲线带偏。」"""
     got = run_scenario(cop_case(-2.5, 45.0, demand=9.08))
     row = got["schedule"][0]
     assert math.isclose(row["hp_heat_kw"], 9.08, abs_tol=1e-4)
@@ -237,19 +237,19 @@ def test_hp_heat_uses_identified_cop():
 # ---------- 难点 2：从充放与静置记录辨识蓄热参数 ----------
 
 def test_storage_fit_recovers_charge_efficiency():
-    """「蓄热调试记录要分别保留充热、放热和静置三类信息。」"""
+    """「蓄热记录要分别保留充热、放热和静置三类信息。」"""
     got = run_scenario(scenario(1, calibration=storage_calibration()))
     assert math.isclose(got["model"]["storage"]["charge_efficiency"], 0.88, abs_tol=5e-4)
 
 
 def test_storage_fit_recovers_discharge_efficiency():
-    """「蓄热调试记录要分别保留充热、放热和静置三类信息。」"""
+    """「蓄热记录要分别保留充热、放热和静置三类信息。」"""
     got = run_scenario(scenario(1, calibration=storage_calibration()))
     assert math.isclose(got["model"]["storage"]["discharge_efficiency"], 0.93, abs_tol=5e-4)
 
 
 def test_storage_fit_recovers_standing_loss():
-    """「蓄热调试记录要分别保留充热、放热和静置三类信息。」"""
+    """「蓄热记录要分别保留充热、放热和静置三类信息。」"""
     got = run_scenario(scenario(1, calibration=storage_calibration()))
     assert math.isclose(got["model"]["storage"]["loss_rate_per_hour"], 0.012, abs_tol=5e-5)
 
@@ -276,13 +276,13 @@ def peak_case():
 
 
 def test_global_plan_minimizes_site_peak():
-    """「在满足热负荷、设备功率和结束蓄热约束的前提下，使总费用最小。」"""
+    """「在热负荷、功率和结束存量都能满足的前提下，总费用要取最低。」"""
     got = run_scenario(peak_case())
     assert math.isclose(got["summary"]["peak_import_kw"], 3.0, abs_tol=1e-5)
 
 
 def test_global_plan_demand_cost():
-    """「需量费用按全时段最大并网功率乘需量单价计算。」"""
+    """「需量费看整个周期里最高的并网功率，再乘合同单价。」"""
     got = run_scenario(peak_case())
     assert math.isclose(got["summary"]["demand_cost_cny"], 300.0, abs_tol=1e-5)
 
@@ -317,7 +317,7 @@ def test_global_plan_total_cost_with_startup():
 
 
 def test_global_plan_respects_minimum_run_and_startup():
-    """「压缩机启动后的连续运行时长不得小于 min_on_periods。」"""
+    """「压缩机启动后至少连续运行 min_on_periods 个时段。」"""
     got = run_scenario(startup_case())
     assert math.isclose(got["summary"]["startup_cost_cny"], 30.0, abs_tol=1e-6)
     assert math.isclose(got["schedule"][4]["stage_fraction"], 0.0, abs_tol=1e-6)

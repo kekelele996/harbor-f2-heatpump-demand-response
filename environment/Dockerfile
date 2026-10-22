@@ -1,4 +1,4 @@
-# 统一运行镜像：已包含 Python、Node、curl、procps，避免评分阶段联网安装。
+# 统一运行镜像：已包含语言运行时和基础命令，避免评分阶段联网安装。
 FROM adminfather/benzhi-claude-code2:20260919@sha256:6bc4ad09b1c450579b25e61e7c797328ebaf4ac4eb086c078d2ec1e9f7742046
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
