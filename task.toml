@@ -31,6 +31,10 @@ collect = []
 timeout_sec = 1800             # 审核口径 900–1800；连续超时再从 900 提到 1800，不要堆到 3600
 user = "runner"                # 解题与参考解以 runner 运行；Dockerfile 不写 USER，保活进程留在 root
 
+[agent.env]
+ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}"
+ANTHROPIC_BASE_URL = "${ANTHROPIC_BASE_URL:-}"
+
 [environment]
 network_mode = "public"
 allow_internet = true
