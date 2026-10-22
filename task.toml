@@ -43,5 +43,11 @@ gpus = 0
 mcp_servers = []
 
 [environment.env]
+HTTP_PROXY = "${HTTP_PROXY:-}"
+HTTPS_PROXY = "${HTTPS_PROXY:-}"
+http_proxy = "${http_proxy:-}"
+https_proxy = "${https_proxy:-}"
+NO_PROXY = "${NO_PROXY:-}"
 
 [solution.env]
+
