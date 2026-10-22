@@ -500,68 +500,6 @@
       0.5,
       0.75,
       1.0
-    ],
-    "cop_table": [
-      {
-        "outdoor_c": -5.0,
-        "supply_c": 35.0,
-        "cop": 2.4
-      },
-      {
-        "outdoor_c": 0.0,
-        "supply_c": 35.0,
-        "cop": 2.9
-      },
-      {
-        "outdoor_c": 5.0,
-        "supply_c": 35.0,
-        "cop": 3.45
-      },
-      {
-        "outdoor_c": 10.0,
-        "supply_c": 35.0,
-        "cop": 3.95
-      },
-      {
-        "outdoor_c": -5.0,
-        "supply_c": 45.0,
-        "cop": 1.82
-      },
-      {
-        "outdoor_c": 0.0,
-        "supply_c": 45.0,
-        "cop": 2.2
-      },
-      {
-        "outdoor_c": 5.0,
-        "supply_c": 45.0,
-        "cop": 2.66
-      },
-      {
-        "outdoor_c": 10.0,
-        "supply_c": 45.0,
-        "cop": 3.05
-      },
-      {
-        "outdoor_c": -5.0,
-        "supply_c": 55.0,
-        "cop": 1.43
-      },
-      {
-        "outdoor_c": 0.0,
-        "supply_c": 55.0,
-        "cop": 1.72
-      },
-      {
-        "outdoor_c": 5.0,
-        "supply_c": 55.0,
-        "cop": 2.08
-      },
-      {
-        "outdoor_c": 10.0,
-        "supply_c": 55.0,
-        "cop": 2.4
-      }
     ]
   },
   "storage": {
@@ -570,9 +508,156 @@
     "terminal_kwh_th": 10.0,
     "max_charge_kw_th": 10.0,
     "max_discharge_kw_th": 9.0,
-    "charge_efficiency": 0.9,
-    "discharge_efficiency": 0.92,
-    "loss_rate_per_hour": 0.01,
     "terminal_tolerance_kwh": 0.5
+  },
+  "calibration": {
+    "cop_samples": [
+      {
+        "outdoor_c": -5.0,
+        "supply_c": 35.0,
+        "hp_electric_kw": 4.0,
+        "hp_heat_kw": 10.0
+      },
+      {
+        "outdoor_c": -5.0,
+        "supply_c": 45.0,
+        "hp_electric_kw": 4.0,
+        "hp_heat_kw": 8.36
+      },
+      {
+        "outdoor_c": -5.0,
+        "supply_c": 55.0,
+        "hp_electric_kw": 4.0,
+        "hp_heat_kw": 6.72
+      },
+      {
+        "outdoor_c": 0.0,
+        "supply_c": 35.0,
+        "hp_electric_kw": 4.0,
+        "hp_heat_kw": 11.2
+      },
+      {
+        "outdoor_c": 0.0,
+        "supply_c": 45.0,
+        "hp_electric_kw": 4.0,
+        "hp_heat_kw": 9.8
+      },
+      {
+        "outdoor_c": 0.0,
+        "supply_c": 55.0,
+        "hp_electric_kw": 4.0,
+        "hp_heat_kw": 8.4
+      },
+      {
+        "outdoor_c": 5.0,
+        "supply_c": 35.0,
+        "hp_electric_kw": 4.0,
+        "hp_heat_kw": 12.4
+      },
+      {
+        "outdoor_c": 5.0,
+        "supply_c": 45.0,
+        "hp_electric_kw": 4.0,
+        "hp_heat_kw": 11.24
+      },
+      {
+        "outdoor_c": 5.0,
+        "supply_c": 55.0,
+        "hp_electric_kw": 4.0,
+        "hp_heat_kw": 10.08
+      },
+      {
+        "outdoor_c": -5.0,
+        "supply_c": 35.0,
+        "hp_electric_kw": 4.0,
+        "hp_heat_kw": 17.4
+      },
+      {
+        "outdoor_c": 5.0,
+        "supply_c": 55.0,
+        "hp_electric_kw": 4.0,
+        "hp_heat_kw": 19.6
+      },
+      {
+        "outdoor_c": 0.0,
+        "supply_c": 45.0,
+        "hp_electric_kw": 4.0,
+        "hp_heat_kw": 5.8
+      }
+    ],
+    "storage_samples": [
+      {
+        "start_kwh": 8.0,
+        "end_kwh": 7.904,
+        "net_heat_kw": 0.0,
+        "period_hours": 1.0
+      },
+      {
+        "start_kwh": 12.0,
+        "end_kwh": 11.928,
+        "net_heat_kw": 0.0,
+        "period_hours": 0.5
+      },
+      {
+        "start_kwh": 5.0,
+        "end_kwh": 4.985,
+        "net_heat_kw": 0.0,
+        "period_hours": 0.25
+      },
+      {
+        "start_kwh": 2.0,
+        "end_kwh": 4.628,
+        "net_heat_kw": 6.0,
+        "period_hours": 0.5
+      },
+      {
+        "start_kwh": 5.0,
+        "end_kwh": 5.865,
+        "net_heat_kw": 4.0,
+        "period_hours": 0.25
+      },
+      {
+        "start_kwh": 1.0,
+        "end_kwh": 4.514,
+        "net_heat_kw": 8.0,
+        "period_hours": 0.5
+      },
+      {
+        "start_kwh": 6.0,
+        "end_kwh": 4.351096774,
+        "net_heat_kw": -3.0,
+        "period_hours": 0.5
+      },
+      {
+        "start_kwh": 8.0,
+        "end_kwh": 6.631913978,
+        "net_heat_kw": -5.0,
+        "period_hours": 0.25
+      },
+      {
+        "start_kwh": 4.0,
+        "end_kwh": 1.801462366,
+        "net_heat_kw": -2.0,
+        "period_hours": 1.0
+      },
+      {
+        "start_kwh": 3.0,
+        "end_kwh": 6.082,
+        "net_heat_kw": 5.0,
+        "period_hours": 0.5
+      },
+      {
+        "start_kwh": 7.0,
+        "end_kwh": 6.158,
+        "net_heat_kw": 0.0,
+        "period_hours": 0.5
+      },
+      {
+        "start_kwh": 2.0,
+        "end_kwh": 0.587462366,
+        "net_heat_kw": -4.0,
+        "period_hours": 0.5
+      }
+    ]
   }
 }

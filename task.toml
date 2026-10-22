@@ -3,7 +3,7 @@ artifacts = []
 
 [task]
 name = "local/f2-heatpump-demand-response"
-description = "商业楼宇热泵与蓄热罐的全时段需量响应调度"
+description = "商业楼宇热泵蓄热系统辨识与需量响应"
 keywords = ["energy-systems", "heat-pump", "thermal-storage", "demand-charge", "time-of-use"]
 [[task.authors]]
 name = "gaobo"

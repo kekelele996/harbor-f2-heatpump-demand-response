@@ -12,61 +12,25 @@ from pathlib import Path
 
 REVERT = {
     "difficulty_1": (
-        '''    rows = heat_pump["cop_table"]
-    xs = sorted({float(row["outdoor_c"]) for row in rows})
-    ys = sorted({float(row["supply_c"]) for row in rows})
-    lookup = {
-        (float(row["outdoor_c"]), float(row["supply_c"])): float(row["cop"])
-        for row in rows
-    }
-    if len(lookup) != len(rows):
-        raise ValueError("cop_table 存在重复网格点")
-    ix0, ix1, fx = _bracket(xs, outdoor_c, "室外温度")
-    iy0, iy1, fy = _bracket(ys, supply_c, "供水温度")
-    x0, x1 = xs[ix0], xs[ix1]
-    y0, y1 = ys[iy0], ys[iy1]
-    c00 = lookup[(x0, y0)]
-    c10 = lookup[(x1, y0)]
-    c01 = lookup[(x0, y1)]
-    c11 = lookup[(x1, y1)]
-    low = c00 + fx * (c10 - c00)
-    high = c01 + fx * (c11 - c01)
-    return low + fy * (high - low)''',
-        '''    rows = heat_pump["cop_table"]
-    nearest_supply = min(
-        {float(row["supply_c"]) for row in rows},
-        key=lambda value: abs(value - supply_c),
-    )
-    points = sorted(
-        (float(row["outdoor_c"]), float(row["cop"]))
-        for row in rows
-        if float(row["supply_c"]) == nearest_supply
-    )
-    if outdoor_c <= points[0][0]:
-        return points[0][1]
-    if outdoor_c >= points[-1][0]:
-        return points[-1][1]
-    for (x0, y0), (x1, y1) in zip(points, points[1:]):
-        if x0 <= outdoor_c <= x1:
-            ratio = (outdoor_c - x0) / (x1 - x0)
-            return y0 + ratio * (y1 - y0)
-    raise ValueError("性能表没有可用的室外温度区间")''',
+        '''    coefficients = _robust_fit(rows, targets)
+    return {
+        "intercept": coefficients[0],''',
+        '''    coefficients = _ols(rows, targets)
+    return {
+        "intercept": coefficients[0],''',
     ),
     "difficulty_2": (
-        '''    retained = energy_kwh * (1.0 - loss_rate * period_hours)
-    if net_heat_kw >= 0.0:
-        return retained + net_heat_kw * period_hours * eta_charge
-    return retained + net_heat_kw * period_hours / eta_discharge''',
-        '''    eta = math.sqrt(eta_charge * eta_discharge)
-    if net_heat_kw >= 0.0:
-        return energy_kwh + net_heat_kw * period_hours * eta
-    return energy_kwh + net_heat_kw * period_hours / eta''',
+        '''    loss, charge_efficiency, inverse_discharge = _robust_fit(rows, targets)''',
+        '''    loss, charge_efficiency, inverse_discharge = _ols(rows, targets)''',
     ),
     "difficulty_3": (
         '''    path = _optimize_path(
-        scenario, cop_values, period, count, stages, rated, capacity, initial, terminal
-    )''',
-        '''    path = _greedy_path(scenario, cop_values, period, count, stages, rated)''',
+        scenario, cop_values, period, count, stages, rated, capacity, initial, terminal,
+        model["storage"], model,
+    )
+    return _evaluate(scenario, path, cop_values, period, model["storage"], model)''',
+        '''    path = _greedy_path(scenario, cop_values, period, count, stages, rated, model["storage"])
+    return _evaluate(scenario, path, cop_values, period, model["storage"], model)''',
     ),
 }
 skip = [item for item in os.environ.get("SKIP", "").split(",") if item]
