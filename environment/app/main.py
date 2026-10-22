@@ -256,6 +256,7 @@ def _evaluate(scenario, path, cop_values, period, storage_model, model):
         "summary": {
             "energy_cost_cny": round(energy_cost, 6),
             "demand_cost_cny": round(demand_cost, 6),
+            "startup_cost_cny": 0.0,
             "total_cost_cny": round(energy_cost + demand_cost, 6),
             "peak_import_kw": round(peak, 6),
         },

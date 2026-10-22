@@ -33,6 +33,7 @@ user = "runner"                # 解题与参考解以 runner 运行；Dockerfil
 
 [agent.env]
 ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}"
+ANTHROPIC_AUTH_TOKEN = "${ANTHROPIC_AUTH_TOKEN:-}"
 ANTHROPIC_BASE_URL = "${ANTHROPIC_BASE_URL:-}"
 
 [environment]

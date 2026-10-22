@@ -37,13 +37,13 @@
       "weight": 0.113,
       "rationale": "难点3 全时段优化：需量费用，难点合计 0.45"
     },
-    "test_outputs.py::test_global_plan_total_cost": {
+    "test_outputs.py::test_global_plan_total_cost_with_startup": {
       "weight": 0.112,
-      "rationale": "难点3 全时段优化：总费用，难点合计 0.45"
+      "rationale": "难点3 启停与爬坡：启动费用进入总目标，难点合计 0.45"
     },
-    "test_outputs.py::test_global_plan_uses_part_load_during_peak": {
+    "test_outputs.py::test_global_plan_respects_minimum_run_and_startup": {
       "weight": 0.112,
-      "rationale": "难点3 全时段优化：部分负荷削峰，难点合计 0.45"
+      "rationale": "难点3 启停与爬坡：最小运行时长与跨时段状态，难点合计 0.45"
     }
   }
 }

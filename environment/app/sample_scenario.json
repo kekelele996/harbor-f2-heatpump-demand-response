@@ -500,7 +500,11 @@
       0.5,
       0.75,
       1.0
-    ]
+    ],
+    "min_on_periods": 1,
+    "min_off_periods": 1,
+    "max_stage_change": 1.0,
+    "startup_cost_cny": 0.0
   },
   "storage": {
     "capacity_kwh_th": 20.0,

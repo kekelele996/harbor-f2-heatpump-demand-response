@@ -200,7 +200,8 @@ def test_prints_required_json_shape():
         "storage_kwh", "grid_import_kw",
     }
     assert set(got["summary"]) == {
-        "energy_cost_cny", "demand_cost_cny", "total_cost_cny", "peak_import_kw",
+        "energy_cost_cny", "demand_cost_cny", "startup_cost_cny",
+        "total_cost_cny", "peak_import_kw",
     }
 
 
@@ -286,13 +287,37 @@ def test_global_plan_demand_cost():
     assert math.isclose(got["summary"]["demand_cost_cny"], 300.0, abs_tol=1e-5)
 
 
-def test_global_plan_total_cost():
-    """「总费用是电度费用与需量费用之和。」"""
-    got = run_scenario(peak_case())
-    assert math.isclose(got["summary"]["total_cost_cny"], 315.6, abs_tol=1e-5)
+def startup_case():
+    data = scenario(8, calibration=storage_calibration(), stages=(0.0, 0.5, 1.0))
+    data["calibration"] = {"cop_samples": ideal_cop_samples(1.0), "storage_samples": ideal_storage_samples()}
+    data["period_hours"] = 1.0
+    data["heat_demand_kw_th"] = [0.0, 0.0, 4.0, 0.0, 0.0, 4.0, 0.0, 0.0]
+    data["energy_price_cny_per_kwh"] = [0.1, 0.1, 2.0, 0.1, 0.1, 2.0, 0.1, 0.1]
+    data["heat_pump"].update({
+        "min_on_periods": 2,
+        "min_off_periods": 2,
+        "max_stage_change": 1.0,
+        "startup_cost_cny": 30.0,
+    })
+    data["storage"].update({
+        "capacity_kwh_th": 4.0,
+        "initial_kwh_th": 0.0,
+        "terminal_kwh_th": 0.0,
+        "terminal_tolerance_kwh": 0.01,
+        "max_charge_kw_th": 4.0,
+        "max_discharge_kw_th": 4.0,
+    })
+    return data
 
 
-def test_global_plan_uses_part_load_during_peak():
-    """「在满足热负荷、设备功率和结束蓄热约束的前提下，使总费用最小。」"""
-    got = run_scenario(peak_case())
-    assert math.isclose(got["schedule"][4]["stage_fraction"], 0.5, abs_tol=1e-6)
+def test_global_plan_total_cost_with_startup():
+    """「每次从停机状态启动都要计入 startup_cost_cny。」"""
+    got = run_scenario(startup_case())
+    assert math.isclose(got["summary"]["total_cost_cny"], 34.6, abs_tol=1e-5)
+
+
+def test_global_plan_respects_minimum_run_and_startup():
+    """「压缩机启动后的连续运行时长不得小于 min_on_periods。」"""
+    got = run_scenario(startup_case())
+    assert math.isclose(got["summary"]["startup_cost_cny"], 30.0, abs_tol=1e-6)
+    assert math.isclose(got["schedule"][4]["stage_fraction"], 0.0, abs_tol=1e-6)

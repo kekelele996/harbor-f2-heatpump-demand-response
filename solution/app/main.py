@@ -244,19 +244,51 @@ def _greedy_path(scenario, cop_values, period, count, stages, rated, storage_mod
     return tuple(path)
 
 
+def _constrained_stage_step(heat_pump, stages, previous, stage, run_count, off_count, startup_cost):
+    min_on = int(_number(heat_pump.get("min_on_periods", 1), "min_on_periods"))
+    min_off = int(_number(heat_pump.get("min_off_periods", 1), "min_off_periods"))
+    ramp = _number(heat_pump.get("max_stage_change", 1.0), "max_stage_change")
+    if min_on < 1 or min_off < 0 or ramp < 0.0 or ramp > 1.0:
+        raise ValueError("热泵启停或爬坡参数不合法")
+    if abs(stage - previous) > ramp + 1e-12:
+        return None
+    if previous > 0.0 and stage == 0.0 and run_count < min_on:
+        return None
+    if previous == 0.0 and stage > 0.0 and off_count < min_off:
+        return None
+    added_startup = startup_cost if previous == 0.0 and stage > 0.0 else 0.0
+    if stage > 0.0:
+        next_run = min(min_on, run_count + 1 if previous > 0.0 else 1)
+        next_off = 0
+    else:
+        next_run = 0
+        next_off = min(min_off, off_count + 1 if previous == 0.0 else 1)
+    return next_run, next_off, added_startup
+
+
 def _optimize_path(scenario, cop_values, period, count, stages, rated, capacity, initial, terminal, storage_model, model):
     max_charge = _number(scenario["storage"]["max_charge_kw_th"], "max_charge_kw_th")
     max_discharge = _number(scenario["storage"]["max_discharge_kw_th"], "max_discharge_kw_th")
+    heat_pump = scenario["heat_pump"]
+    startup_cost = _number(heat_pump.get("startup_cost_cny", 0.0), "startup_cost_cny")
+    min_off = int(_number(heat_pump.get("min_off_periods", 1), "min_off_periods"))
     limit_key = int(round(capacity / SOC_STEP_KWH))
     start_key = int(round(initial / SOC_STEP_KWH))
-    states = {start_key: [(0.0, 0.0, ())]}
+    # 状态：蓄热量网格、上一档位、连续运行时长、连续停机时长。
+    states = {(start_key, 0.0, 0, min_off): [(0.0, 0.0, ())]}
     for t in range(count):
         demand = float(scenario["heat_demand_kw_th"][t])
         price = float(scenario["energy_price_cny_per_kwh"][t])
         expanded = {}
-        for key, frontier in states.items():
+        for (key, previous, run_count, off_count), frontier in states.items():
             energy = key * SOC_STEP_KWH
             for stage in stages:
+                step = _constrained_stage_step(
+                    heat_pump, stages, previous, stage, run_count, off_count, startup_cost
+                )
+                if step is None:
+                    continue
+                next_run, next_off, added_startup = step
                 hp_electric = stage * rated
                 net_heat = hp_electric * cop_values[t] - demand
                 if net_heat > max_charge + 1e-9 or net_heat < -max_discharge - 1e-9:
@@ -268,19 +300,20 @@ def _optimize_path(scenario, cop_values, period, count, stages, rated, capacity,
                 if next_key < 0 or next_key > limit_key:
                     continue
                 grid_import = _grid_import(scenario, t, hp_electric)
-                increment = grid_import * price * period
-                bucket = expanded.setdefault(next_key, [])
+                increment = grid_import * price * period + added_startup
+                state_key = (next_key, stage, next_run, next_off)
+                bucket = expanded.setdefault(state_key, [])
                 for peak, cost, path in frontier:
                     bucket.append((max(peak, grid_import), cost + increment, path + (stage,)))
         states = {key: _prune_frontier(items) for key, items in expanded.items()}
         if not states:
             raise ValueError("没有满足设备与蓄热约束的调度方案")
     target_key = int(round(terminal / SOC_STEP_KWH))
-    terminal_tol = _number(scenario["storage"]["terminal_tolerance_kwh"], "terminal_tolerance_kwh")
-    candidates = []
+    tolerance = _number(scenario["storage"]["terminal_tolerance_kwh"], "terminal_tolerance_kwh")
     demand_rate = _number(scenario["demand_charge_cny_per_kw_day"], "demand_rate")
-    for key, frontier in states.items():
-        if abs(key - target_key) * SOC_STEP_KWH > terminal_tol + SOC_STEP_KWH + 1e-9:
+    candidates = []
+    for (key, previous, run_count, off_count), frontier in states.items():
+        if abs(key - target_key) * SOC_STEP_KWH > tolerance + SOC_STEP_KWH + 1e-9:
             continue
         for peak, cost, path in frontier:
             candidates.append((cost + peak * demand_rate, path))
@@ -304,10 +337,24 @@ def _evaluate(scenario, path, cop_values, period, storage_model, model):
     energy = _number(storage["initial_kwh_th"], "initial_kwh_th")
     max_charge = _number(storage["max_charge_kw_th"], "max_charge_kw_th")
     max_discharge = _number(storage["max_discharge_kw_th"], "max_discharge_kw_th")
+    heat_pump = scenario["heat_pump"]
+    startup_cost = _number(heat_pump.get("startup_cost_cny", 0.0), "startup_cost_cny")
     schedule = []
     imports = []
     energy_cost = 0.0
+    startup_total = 0.0
+    previous = 0.0
+    run_count = 0
+    off_count = int(_number(heat_pump.get("min_off_periods", 1), "min_off_periods"))
     for t, stage in enumerate(path):
+        step = _constrained_stage_step(
+            heat_pump, [stage], previous, stage, run_count, off_count, startup_cost
+        )
+        if step is None:
+            raise ValueError("调度违反热泵启停或爬坡约束")
+        run_count, off_count, added_startup = step
+        startup_total += added_startup
+        previous = stage
         hp_electric = stage * rated
         hp_heat = hp_electric * cop_values[t]
         demand = float(scenario["heat_demand_kw_th"][t])
@@ -344,7 +391,8 @@ def _evaluate(scenario, path, cop_values, period, storage_model, model):
         "summary": {
             "energy_cost_cny": round(energy_cost, 6),
             "demand_cost_cny": round(demand_cost, 6),
-            "total_cost_cny": round(energy_cost + demand_cost, 6),
+            "startup_cost_cny": round(startup_total, 6),
+            "total_cost_cny": round(energy_cost + demand_cost + startup_total, 6),
             "peak_import_kw": round(peak, 6),
         },
     }
