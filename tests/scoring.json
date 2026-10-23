@@ -8,43 +8,51 @@
   "tests": {
     "test_outputs.py::test_cop_fit_recovers_supply_sensitivity": {
       "weight": 0.084,
-      "rationale": "难点1 稳健辨识 COP：尖峰下恢复供水温度斜率，难点合计 0.25"
+      "rationale": "难点1 稳健辨识 COP：业务关键行为，组权重按 0.25/0.30/0.45 分配"
     },
     "test_outputs.py::test_cop_fit_recovers_interaction_term": {
       "weight": 0.083,
-      "rationale": "难点1 稳健辨识 COP：恢复交互项，难点合计 0.25"
+      "rationale": "难点1 稳健辨识 COP：业务关键行为，组权重按 0.25/0.30/0.45 分配"
     },
     "test_outputs.py::test_hp_heat_uses_identified_cop": {
       "weight": 0.083,
-      "rationale": "难点1 稳健辨识 COP：制热量使用辨识后的 COP，难点合计 0.25"
+      "rationale": "难点1 稳健辨识 COP：业务关键行为，组权重按 0.25/0.30/0.45 分配"
     },
     "test_outputs.py::test_storage_fit_recovers_charge_efficiency": {
       "weight": 0.1,
-      "rationale": "难点2 蓄热辨识：充热效率，难点合计 0.30"
+      "rationale": "难点2 蓄热辨识：业务关键行为，组权重按 0.25/0.30/0.45 分配"
     },
     "test_outputs.py::test_storage_fit_recovers_discharge_efficiency": {
       "weight": 0.1,
-      "rationale": "难点2 蓄热辨识：放热效率，难点合计 0.30"
+      "rationale": "难点2 蓄热辨识：业务关键行为，组权重按 0.25/0.30/0.45 分配"
     },
     "test_outputs.py::test_storage_fit_recovers_standing_loss": {
       "weight": 0.1,
-      "rationale": "难点2 蓄热辨识：静置散热率，难点合计 0.30"
+      "rationale": "难点2 蓄热辨识：业务关键行为，组权重按 0.25/0.30/0.45 分配"
     },
     "test_outputs.py::test_global_plan_minimizes_site_peak": {
-      "weight": 0.113,
-      "rationale": "难点3 全时段优化：并网峰值，难点合计 0.45"
+      "weight": 0.075,
+      "rationale": "难点3 需量优化与启停边界：业务关键行为，组权重按 0.25/0.30/0.45 分配"
     },
     "test_outputs.py::test_global_plan_demand_cost": {
-      "weight": 0.113,
-      "rationale": "难点3 全时段优化：需量费用，难点合计 0.45"
+      "weight": 0.075,
+      "rationale": "难点3 需量优化与启停边界：业务关键行为，组权重按 0.25/0.30/0.45 分配"
     },
     "test_outputs.py::test_global_plan_total_cost_with_startup": {
-      "weight": 0.112,
-      "rationale": "难点3 启停与爬坡：启动费用进入总目标，难点合计 0.45"
+      "weight": 0.075,
+      "rationale": "难点3 需量优化与启停边界：业务关键行为，组权重按 0.25/0.30/0.45 分配"
     },
     "test_outputs.py::test_global_plan_respects_minimum_run_and_startup": {
-      "weight": 0.112,
-      "rationale": "难点3 启停与爬坡：最小运行时长与跨时段状态，难点合计 0.45"
+      "weight": 0.075,
+      "rationale": "难点3 需量优化与启停边界：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+    },
+    "test_outputs.py::test_initial_off_must_finish_before_start": {
+      "weight": 0.075,
+      "rationale": "难点3 需量优化与启停边界：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+    },
+    "test_outputs.py::test_horizon_end_need_not_complete_min_off": {
+      "weight": 0.075,
+      "rationale": "难点3 需量优化与启停边界：业务关键行为，组权重按 0.25/0.30/0.45 分配"
     }
   }
 }

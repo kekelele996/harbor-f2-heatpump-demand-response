@@ -26,7 +26,7 @@ REVERT = {
     "difficulty_3": (
         '''    path = _optimize_path(
         scenario, cop_values, period, count, stages, rated, capacity, initial, terminal,
-        model["storage"], model,
+        initial_stage, initial_periods, model["storage"], model,
     )
     return _evaluate(scenario, path, cop_values, period, model["storage"], model)''',
         '''    path = _greedy_path(scenario, cop_values, period, count, stages, rated, model["storage"])

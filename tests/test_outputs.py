@@ -165,6 +165,8 @@ def scenario(length, *, calibration=None, stages=(0.0, 1.0), rated=4.0, supply=4
             "rated_electric_kw": rated,
             "supply_temp_c": supply,
             "stage_fractions": list(stages),
+            "initial_stage_fraction": 0.0,
+            "initial_segment_periods": 1,
         },
         "storage": {
             "capacity_kwh_th": 10.0,
@@ -298,6 +300,8 @@ def startup_case():
         "min_off_periods": 2,
         "max_stage_change": 1.0,
         "startup_cost_cny": 30.0,
+        "initial_stage_fraction": 0.0,
+        "initial_segment_periods": 2,
     })
     data["storage"].update({
         "capacity_kwh_th": 4.0,
@@ -321,3 +325,68 @@ def test_global_plan_respects_minimum_run_and_startup():
     got = run_scenario(startup_case())
     assert math.isclose(got["summary"]["startup_cost_cny"], 30.0, abs_tol=1e-6)
     assert math.isclose(got["schedule"][4]["stage_fraction"], 0.0, abs_tol=1e-6)
+
+def initial_off_case():
+    data = scenario(4, calibration=storage_calibration(), stages=(0.0, 0.5, 1.0))
+    data["calibration"] = {"cop_samples": ideal_cop_samples(1.0), "storage_samples": ideal_storage_samples()}
+    data["period_hours"] = 1.0
+    data["heat_demand_kw_th"] = [0.0, 0.0, 4.0, 0.0]
+    data["energy_price_cny_per_kwh"] = [0.5] * 4
+    data["heat_pump"].update({
+        "min_on_periods": 2,
+        "min_off_periods": 2,
+        "max_stage_change": 1.0,
+        "startup_cost_cny": 0.0,
+        "initial_stage_fraction": 0.0,
+        "initial_segment_periods": 0,
+    })
+    data["storage"].update({
+        "capacity_kwh_th": 4.0,
+        "initial_kwh_th": 0.0,
+        "terminal_kwh_th": 4.0,
+        "terminal_tolerance_kwh": 0.01,
+        "max_charge_kw_th": 4.0,
+        "max_discharge_kw_th": 4.0,
+    })
+    return data
+
+
+def end_off_case():
+    data = scenario(2, calibration=storage_calibration(), stages=(0.0, 1.0))
+    data["calibration"] = {"cop_samples": ideal_cop_samples(1.0), "storage_samples": ideal_storage_samples()}
+    data["period_hours"] = 1.0
+    data["heat_demand_kw_th"] = [4.0, 0.0]
+    data["energy_price_cny_per_kwh"] = [0.0, 0.0]
+    data["heat_pump"].update({
+        "min_on_periods": 1,
+        "min_off_periods": 2,
+        "max_stage_change": 1.0,
+        "startup_cost_cny": 0.0,
+        "initial_stage_fraction": 0.0,
+        "initial_segment_periods": 2,
+    })
+    data["storage"].update({
+        "capacity_kwh_th": 1.0,
+        "initial_kwh_th": 0.0,
+        "terminal_kwh_th": 0.0,
+        "terminal_tolerance_kwh": 0.01,
+        "max_charge_kw_th": 4.0,
+        "max_discharge_kw_th": 4.0,
+    })
+    return data
+
+
+def test_initial_off_must_finish_before_start():
+    """「初始停机时长没达到 min_off_periods 时，启动要等到补足后再进行。」"""
+    got = run_scenario(initial_off_case())
+    assert math.isclose(got["schedule"][0]["stage_fraction"], 0.0, abs_tol=1e-6)
+    assert math.isclose(got["schedule"][1]["stage_fraction"], 0.0, abs_tol=1e-6)
+    assert got["schedule"][2]["stage_fraction"] > 0.0
+
+
+def test_horizon_end_need_not_complete_min_off():
+    """「周期末尾没有后续时段时，不要求补足尚未完成的运行或停机时长。」"""
+    got = run_scenario(end_off_case())
+    assert got["schedule"][0]["stage_fraction"] > 0.0
+    assert math.isclose(got["schedule"][1]["stage_fraction"], 0.0, abs_tol=1e-6)
+

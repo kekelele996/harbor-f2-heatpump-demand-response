@@ -504,7 +504,9 @@
     "min_on_periods": 1,
     "min_off_periods": 1,
     "max_stage_change": 1.0,
-    "startup_cost_cny": 0.0
+    "startup_cost_cny": 0.0,
+    "initial_stage_fraction": 0.0,
+    "initial_segment_periods": 1
   },
   "storage": {
     "capacity_kwh_th": 20.0,

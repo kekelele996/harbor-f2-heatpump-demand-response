@@ -193,7 +193,13 @@ def _stage_data(scenario):
     terminal = _number(storage["terminal_kwh_th"], "terminal_kwh_th")
     if not 0.0 <= initial <= capacity or not 0.0 <= terminal <= capacity:
         raise ValueError("蓄热初始量或结束量超出容量")
-    return stages, rated, capacity, initial, terminal
+    initial_stage = _number(heat_pump.get("initial_stage_fraction", 0.0), "initial_stage_fraction")
+    if initial_stage not in stages:
+        raise ValueError("initial_stage_fraction 必须来自 stage_fractions")
+    initial_periods = _number(heat_pump.get("initial_segment_periods", 0), "initial_segment_periods")
+    if not initial_periods.is_integer() or initial_periods < 0:
+        raise ValueError("initial_segment_periods 必须是非负整数")
+    return stages, rated, capacity, initial, terminal, initial_stage, int(initial_periods)
 
 
 def _advance_storage(energy_kwh, net_heat_kw, period_hours, storage_model):
@@ -248,6 +254,19 @@ def _greedy_path(scenario, cop_values, period, count, stages, rated, storage_mod
     return tuple(path)
 
 
+def _initial_stage_memory(heat_pump):
+    min_on = int(_number(heat_pump.get("min_on_periods", 1), "min_on_periods"))
+    min_off = int(_number(heat_pump.get("min_off_periods", 1), "min_off_periods"))
+    previous = _number(heat_pump.get("initial_stage_fraction", 0.0), "initial_stage_fraction")
+    raw_count = _number(heat_pump.get("initial_segment_periods", 0), "initial_segment_periods")
+    if not raw_count.is_integer() or raw_count < 0:
+        raise ValueError("initial_segment_periods 必须是非负整数")
+    count = int(raw_count)
+    if previous > 0.0:
+        return previous, min(min_on, count), 0
+    return 0.0, 0, min(min_off, count)
+
+
 def _constrained_stage_step(heat_pump, stages, previous, stage, run_count, off_count, startup_cost):
     min_on = int(_number(heat_pump.get("min_on_periods", 1), "min_on_periods"))
     min_off = int(_number(heat_pump.get("min_off_periods", 1), "min_off_periods"))
@@ -270,7 +289,7 @@ def _constrained_stage_step(heat_pump, stages, previous, stage, run_count, off_c
     return next_run, next_off, added_startup
 
 
-def _optimize_path(scenario, cop_values, period, count, stages, rated, capacity, initial, terminal, storage_model, model):
+def _optimize_path(scenario, cop_values, period, count, stages, rated, capacity, initial, terminal, initial_stage, initial_periods, storage_model, model):
     max_charge = _number(scenario["storage"]["max_charge_kw_th"], "max_charge_kw_th")
     max_discharge = _number(scenario["storage"]["max_discharge_kw_th"], "max_discharge_kw_th")
     heat_pump = scenario["heat_pump"]
@@ -279,7 +298,12 @@ def _optimize_path(scenario, cop_values, period, count, stages, rated, capacity,
     limit_key = int(round(capacity / SOC_STEP_KWH))
     start_key = int(round(initial / SOC_STEP_KWH))
     # 状态：蓄热量网格、上一档位、连续运行时长、连续停机时长。
-    states = {(start_key, 0.0, 0, min_off): [(0.0, 0.0, ())]}
+    initial_previous, initial_run, initial_off = _initial_stage_memory({
+        **scenario["heat_pump"],
+        "initial_stage_fraction": initial_stage,
+        "initial_segment_periods": initial_periods,
+    })
+    states = {(start_key, initial_previous, initial_run, initial_off): [(0.0, 0.0, ())]}
     for t in range(count):
         demand = float(scenario["heat_demand_kw_th"][t])
         price = float(scenario["energy_price_cny_per_kwh"][t])
@@ -347,9 +371,7 @@ def _evaluate(scenario, path, cop_values, period, storage_model, model):
     imports = []
     energy_cost = 0.0
     startup_total = 0.0
-    previous = 0.0
-    run_count = 0
-    off_count = int(_number(heat_pump.get("min_off_periods", 1), "min_off_periods"))
+    previous, run_count, off_count = _initial_stage_memory(heat_pump)
     for t, stage in enumerate(path):
         step = _constrained_stage_step(
             heat_pump, [stage], previous, stage, run_count, off_count, startup_cost
@@ -404,7 +426,7 @@ def _evaluate(scenario, path, cop_values, period, storage_model, model):
 
 def solve(scenario):
     period, count = _case_inputs(scenario)
-    stages, rated, capacity, initial, terminal = _stage_data(scenario)
+    stages, rated, capacity, initial, terminal, initial_stage, initial_periods = _stage_data(scenario)
     model = _estimate_model(scenario)
     supply = _number(scenario["heat_pump"]["supply_temp_c"], "supply_temp_c")
     cop_values = [
@@ -413,7 +435,7 @@ def solve(scenario):
     ]
     path = _optimize_path(
         scenario, cop_values, period, count, stages, rated, capacity, initial, terminal,
-        model["storage"], model,
+        initial_stage, initial_periods, model["storage"], model,
     )
     return _evaluate(scenario, path, cop_values, period, model["storage"], model)
 
