@@ -23,6 +23,10 @@ def _number(value, name):
     return float(value)
 
 
+def _valid_stage_fraction(value):
+    return value >= 0.0 and value <= 1.0
+
+
 def _solve_linear(matrix, vector):
     """带部分主元的高斯消元，返回方阵方程组的解。"""
     n = len(vector)
@@ -181,7 +185,7 @@ def _stage_data(scenario):
     heat_pump = scenario["heat_pump"]
     storage = scenario["storage"]
     stages = sorted({_number(v, "stage_fraction") for v in heat_pump["stage_fractions"]})
-    if not stages or stages[0] < 0.0 or stages[-1] > 1.0 or 0.0 not in stages:
+    if not stages or not all(_valid_stage_fraction(value) for value in stages) or 0.0 not in stages:
         raise ValueError("stage_fractions 必须在 [0, 1] 内并包含 0")
     rated = _number(heat_pump["rated_electric_kw"], "rated_electric_kw")
     capacity = _number(storage["capacity_kwh_th"], "capacity_kwh_th")
