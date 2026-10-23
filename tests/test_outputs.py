@@ -1,8 +1,10 @@
 """楼宇热泵蓄热系统辨识与需量响应的验收测试。"""
 
 import json
+import itertools
 import math
 import os
+import random
 import signal
 import subprocess
 import tempfile
@@ -389,4 +391,85 @@ def test_horizon_end_need_not_complete_min_off():
     got = run_scenario(end_off_case())
     assert got["schedule"][0]["stage_fraction"] > 0.0
     assert math.isclose(got["schedule"][1]["stage_fraction"], 0.0, abs_tol=1e-6)
+
+def random_small_case(rng):
+    data = scenario(6, calibration=storage_calibration(), stages=(0.0, 0.5, 1.0))
+    data["calibration"] = {"cop_samples": ideal_cop_samples(1.0), "storage_samples": ideal_storage_samples()}
+    data["period_hours"] = 1.0
+    data["heat_demand_kw_th"] = [float(rng.choice((0.0, 2.0, 4.0))) for _ in range(6)]
+    data["base_load_kw"] = [float(rng.choice((0.5, 1.5, 2.5))) for _ in range(6)]
+    data["pv_kw"] = [float(rng.choice((0.0, 1.0))) for _ in range(6)]
+    data["energy_price_cny_per_kwh"] = [rng.choice((0.2, 0.8, 1.8)) for _ in range(6)]
+    data["demand_charge_cny_per_kw_day"] = float(rng.choice((30.0, 60.0, 120.0)))
+    data["heat_pump"].update({
+        "min_on_periods": 1,
+        "min_off_periods": 1,
+        "max_stage_change": 1.0,
+        "startup_cost_cny": float(rng.choice((0.0, 5.0, 12.0))),
+        "initial_stage_fraction": 0.0,
+        "initial_segment_periods": 1,
+    })
+    data["storage"].update({
+        "capacity_kwh_th": 4.0,
+        "initial_kwh_th": 0.0,
+        "terminal_kwh_th": 0.0,
+        "terminal_tolerance_kwh": 0.01,
+        "max_charge_kw_th": 4.0,
+        "max_discharge_kw_th": 4.0,
+    })
+    return data
+
+
+def brute_force_small(data):
+    stages = data["heat_pump"]["stage_fractions"]
+    best = None
+    for path in itertools.product(stages, repeat=len(data["heat_demand_kw_th"])):
+        energy = data["storage"]["initial_kwh_th"]
+        peak = 0.0
+        energy_cost = 0.0
+        startup_total = 0.0
+        previous = data["heat_pump"]["initial_stage_fraction"]
+        run_count = 0
+        off_count = data["heat_pump"]["initial_segment_periods"]
+        feasible = True
+        for index, stage in enumerate(path):
+            if previous == 0.0 and stage > 0.0 and off_count < data["heat_pump"]["min_off_periods"]:
+                feasible = False
+                break
+            if previous > 0.0 and stage == 0.0 and run_count < data["heat_pump"]["min_on_periods"]:
+                feasible = False
+                break
+            if abs(stage - previous) > data["heat_pump"]["max_stage_change"] + 1e-12:
+                feasible = False
+                break
+            if previous == 0.0 and stage > 0.0:
+                startup_total += data["heat_pump"]["startup_cost_cny"]
+            net_heat = stage * data["heat_pump"]["rated_electric_kw"] - data["heat_demand_kw_th"][index]
+            energy += net_heat * data["period_hours"]
+            if energy < -1e-9 or energy > data["storage"]["capacity_kwh_th"] + 1e-9:
+                feasible = False
+                break
+            grid_import = max(0.0, data["base_load_kw"][index] + stage * data["heat_pump"]["rated_electric_kw"] - data["pv_kw"][index])
+            peak = max(peak, grid_import)
+            energy_cost += grid_import * data["energy_price_cny_per_kwh"][index] * data["period_hours"]
+            if stage > 0.0:
+                run_count, off_count = run_count + 1 if previous > 0.0 else 1, 0
+            else:
+                run_count, off_count = 0, off_count + 1 if previous == 0.0 else 1
+            previous = stage
+        if feasible and abs(energy - data["storage"]["terminal_kwh_th"]) <= data["storage"]["terminal_tolerance_kwh"]:
+            total = energy_cost + peak * data["demand_charge_cny_per_kw_day"] + startup_total
+            if best is None or total < best:
+                best = total
+    return best
+
+
+def test_randomized_independent_optimum():
+    """「合法场景都要按同一口径求解，不能依赖样例文件名或固定夹具。」"""
+    rng = random.SystemRandom()
+    for _ in range(4):
+        data = random_small_case(rng)
+        expected = brute_force_small(data)
+        got = run_scenario(data)
+        assert math.isclose(got["summary"]["total_cost_cny"], expected, abs_tol=1e-4)
 

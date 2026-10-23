@@ -8,51 +8,55 @@
   "tests": {
     "test_outputs.py::test_cop_fit_recovers_supply_sensitivity": {
       "weight": 0.084,
-      "rationale": "难点1 稳健辨识 COP：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+      "rationale": "D1/D2 物理辨识"
     },
     "test_outputs.py::test_cop_fit_recovers_interaction_term": {
       "weight": 0.083,
-      "rationale": "难点1 稳健辨识 COP：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+      "rationale": "D1/D2 物理辨识"
     },
     "test_outputs.py::test_hp_heat_uses_identified_cop": {
       "weight": 0.083,
-      "rationale": "难点1 稳健辨识 COP：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+      "rationale": "D1/D2 物理辨识"
     },
     "test_outputs.py::test_storage_fit_recovers_charge_efficiency": {
       "weight": 0.1,
-      "rationale": "难点2 蓄热辨识：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+      "rationale": "D1/D2 物理辨识"
     },
     "test_outputs.py::test_storage_fit_recovers_discharge_efficiency": {
       "weight": 0.1,
-      "rationale": "难点2 蓄热辨识：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+      "rationale": "D1/D2 物理辨识"
     },
     "test_outputs.py::test_storage_fit_recovers_standing_loss": {
       "weight": 0.1,
-      "rationale": "难点2 蓄热辨识：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+      "rationale": "D1/D2 物理辨识"
     },
     "test_outputs.py::test_global_plan_minimizes_site_peak": {
-      "weight": 0.075,
-      "rationale": "难点3 需量优化与启停边界：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+      "weight": 0.067,
+      "rationale": "难点3 需量优化、启停边界与随机独立复核"
     },
     "test_outputs.py::test_global_plan_demand_cost": {
-      "weight": 0.075,
-      "rationale": "难点3 需量优化与启停边界：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+      "weight": 0.067,
+      "rationale": "难点3 需量优化、启停边界与随机独立复核"
     },
     "test_outputs.py::test_global_plan_total_cost_with_startup": {
-      "weight": 0.075,
-      "rationale": "难点3 需量优化与启停边界：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+      "weight": 0.067,
+      "rationale": "难点3 需量优化、启停边界与随机独立复核"
     },
     "test_outputs.py::test_global_plan_respects_minimum_run_and_startup": {
-      "weight": 0.075,
-      "rationale": "难点3 需量优化与启停边界：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+      "weight": 0.067,
+      "rationale": "难点3 需量优化、启停边界与随机独立复核"
     },
     "test_outputs.py::test_initial_off_must_finish_before_start": {
-      "weight": 0.075,
-      "rationale": "难点3 需量优化与启停边界：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+      "weight": 0.066,
+      "rationale": "难点3 需量优化、启停边界与随机独立复核"
     },
     "test_outputs.py::test_horizon_end_need_not_complete_min_off": {
-      "weight": 0.075,
-      "rationale": "难点3 需量优化与启停边界：业务关键行为，组权重按 0.25/0.30/0.45 分配"
+      "weight": 0.066,
+      "rationale": "难点3 需量优化、启停边界与随机独立复核"
+    },
+    "test_outputs.py::test_randomized_independent_optimum": {
+      "weight": 0.05,
+      "rationale": "难点3 需量优化、启停边界与随机独立复核"
     }
   }
 }
