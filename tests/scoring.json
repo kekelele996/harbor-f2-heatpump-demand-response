@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "weight_policy": "business_priority",
   "gate_tests": [
     "test_outputs.py::test_prints_required_json_shape",
     "test_outputs.py::test_wrong_argument_count_exits_2"
