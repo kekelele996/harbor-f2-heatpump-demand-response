@@ -13,3 +13,4 @@ RUN if [ ! -e /usr/local/bin/python3 ]; then ln -s /usr/bin/python3 /usr/local/b
 WORKDIR /app
 COPY app/ /app/
 RUN chown -R runner:runner /app
+CMD ["sleep", "infinity"]
